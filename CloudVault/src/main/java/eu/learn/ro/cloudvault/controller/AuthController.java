@@ -9,6 +9,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
@@ -23,10 +25,9 @@ public class AuthController {
     public ResponseEntity<String> login(@RequestBody LoginRequest loginRequest) {
         System.out.println("Login request received for username: " + loginRequest.getUsername());
 
-        // Simulate authentication logic
         User user = userRepository.findByUsername(loginRequest.getUsername());
         if (user != null && user.getPassword().equals(loginRequest.getPassword())) {
-            String token = jwtUtil.generateToken(loginRequest.getUsername());
+            String token = jwtUtil.generateToken(user.getUsername(), List.of(user.getRole()));
             System.out.println("Generated token: " + token);
             return ResponseEntity.ok(token);
         } else {

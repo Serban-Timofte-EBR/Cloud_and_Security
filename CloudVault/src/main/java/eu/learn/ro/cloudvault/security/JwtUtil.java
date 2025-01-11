@@ -1,5 +1,6 @@
 package eu.learn.ro.cloudvault.security;
 
+import eu.learn.ro.cloudvault.model.Role;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
@@ -7,6 +8,7 @@ import io.jsonwebtoken.security.Keys;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Date;
+import java.util.List;
 
 import org.springframework.stereotype.Component;
 
@@ -19,9 +21,10 @@ public class JwtUtil {
     private final Key key = new SecretKeySpec(secretKey.getBytes(StandardCharsets.UTF_8), SignatureAlgorithm.HS256.getJcaName());
 
 
-    public String generateToken(String username) {
+    public String generateToken(String username, List<Role> roles) {
         return Jwts.builder()
                 .setSubject(username)
+                .claim("roles", roles.stream().map(role -> "ROLE_" + role.name()).toList()) // Prefix roles
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10)) // 10 hours
                 .signWith(key)

@@ -10,6 +10,8 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationProvider;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
+import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
 
 import javax.crypto.spec.SecretKeySpec;
@@ -27,20 +29,26 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/**").permitAll()
-                        .requestMatchers("/api/admin/**").hasAuthority("ADMIN") // Only admins can access
-                        .requestMatchers("/api/user/**").hasAnyAuthority("ADMIN", "USER") // Admins and users
-                        .requestMatchers("/api/public/**").permitAll() // Public access
-                        .requestMatchers("/api/files/upload").hasAnyAuthority("ROLE_USER", "ROLE_ADMIN") // Upload: USER and ADMIN
-                        .requestMatchers("/api/files/download/**").hasAnyAuthority("ROLE_USER", "ROLE_ADMIN") // Download: USER and ADMIN
-                        .requestMatchers("/api/files/delete/**").hasAuthority("ROLE_ADMIN") // Delete: ADMIN only
+                        .requestMatchers("/api/files/upload").hasAnyAuthority("ROLE_USER", "ROLE_ADMIN")
+                        .requestMatchers("/api/files/download/**").hasAnyAuthority("ROLE_USER", "ROLE_ADMIN")
+                        .requestMatchers("/api/files/delete/**").hasAuthority("ROLE_ADMIN")
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
-                        .authenticationManagerResolver(authenticationManagerResolver()));
+                        .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())));
 
-        // Debugging for security rules
-        System.out.println("Security filter chain configured.");
         return http.build();
+    }
+
+    @Bean
+    public JwtAuthenticationConverter jwtAuthenticationConverter() {
+        JwtGrantedAuthoritiesConverter grantedAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();
+        grantedAuthoritiesConverter.setAuthorityPrefix(""); // No additional prefix; already prefixed in the JWT
+        grantedAuthoritiesConverter.setAuthoritiesClaimName("roles"); // Map roles from the claim name in the token
+
+        JwtAuthenticationConverter authenticationConverter = new JwtAuthenticationConverter();
+        authenticationConverter.setJwtGrantedAuthoritiesConverter(grantedAuthoritiesConverter);
+        return authenticationConverter;
     }
 
     @Bean
@@ -53,17 +61,8 @@ public class SecurityConfig {
     @Bean
     public AuthenticationManagerResolver<HttpServletRequest> authenticationManagerResolver() {
         return request -> {
-            String authHeader = request.getHeader("Authorization");
-            System.out.println("Authorization header: " + authHeader);
-
             JwtAuthenticationProvider provider = new JwtAuthenticationProvider(jwtDecoder());
-            return new AuthenticationManager() {
-                @Override
-                public Authentication authenticate(Authentication authentication) throws AuthenticationException {
-                    System.out.println("Authenticating token...");
-                    return provider.authenticate(authentication);
-                }
-            };
+            return authentication -> provider.authenticate(authentication);
         };
     }
 }

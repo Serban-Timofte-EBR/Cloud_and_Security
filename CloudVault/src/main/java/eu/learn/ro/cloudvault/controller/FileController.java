@@ -9,16 +9,19 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.logging.Logger;
 
 @RestController
 @RequestMapping("/api/files")
 public class FileController {
 
+//    private static final Logger logger = Logger.getLogger(FileController.class);
+
     @Autowired
     private FileService fileService;
 
     @PostMapping("/upload")
-    @Secured({"ROLE_USER", "ROLE_ADMIN"})
+    @Secured({"USER", "ADMIN"})
     public ResponseEntity<FileMetadata> uploadFile(
             @RequestParam("file") MultipartFile file,
             @RequestParam("fileType") String fileType
@@ -43,7 +46,7 @@ public class FileController {
     }
 
     @GetMapping("/download/{fileName}")
-    @Secured({"ROLE_USER", "ROLE_ADMIN"})
+    @Secured({"USER", "ADMIN"})
     public ResponseEntity<byte[]> downloadFile(@PathVariable String fileName) {
         try {
             System.out.println("Request received to download file: " + fileName);
@@ -69,7 +72,7 @@ public class FileController {
     }
 
     @DeleteMapping("/delete/{fileName}")
-    @Secured("ROLE_ADMIN")
+    @Secured("ADMIN")
     public ResponseEntity<String> deleteFile(@PathVariable String fileName) {
         System.out.println("\"Admin attempting to delete file: {}\" + fileName");
 

@@ -4,15 +4,21 @@ import eu.learn.ro.cloudvault.dto.FileMetadataRequestDTO;
 import eu.learn.ro.cloudvault.dto.FileMetadataResponseDTO;
 import eu.learn.ro.cloudvault.model.FileMetadata;
 import eu.learn.ro.cloudvault.repository.FileMetadataRepository;
+import eu.learn.ro.cloudvault.security.EncryptionUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 
 @Service
 public class FileService {
@@ -40,23 +46,43 @@ public class FileService {
     }
 
     public FileMetadata saveFile(FileMetadata metadata, byte[] fileData) throws IOException {
-        Path storageDir = Paths.get("storage");
-        Files.createDirectories(storageDir);
+        try {
+            String encryptedData = EncryptionUtil.encrypt(new String(fileData));
 
-        Path filePath = storageDir.resolve(metadata.getFileName());
-        Files.write(filePath, fileData);
+            Path storageDir = Paths.get(storageDirectory);
+            if (!Files.exists(storageDir)) {
+                Files.createDirectories(storageDir);
+            }
 
-        System.out.println("File saved at: " + filePath.toAbsolutePath());
-        return metadata;
+            Path filePath = storageDir.resolve(metadata.getFileName());
+            Files.write(filePath, encryptedData.getBytes());
+
+            System.out.println("File encrypted and saved at: " + filePath.toAbsolutePath());
+
+            return fileMetadataRepository.save(metadata);
+        } catch (Exception e) {
+            throw new RuntimeException("Error encrypting and saving file", e);
+        }
     }
 
     public byte[] getFile(String fileName) throws IOException {
-        File file = new File(storageDirectory + File.separator + fileName);
-        if (!file.exists()) {
-            throw new IOException("File not found: " + fileName);
-        }
+        try {
+            Path filePath = Paths.get(storageDirectory, fileName);
 
-        return java.nio.file.Files.readAllBytes(file.toPath());
+            if (!Files.exists(filePath)) {
+                throw new IOException("File not found: " + fileName);
+            }
+
+            byte[] encryptedData = Files.readAllBytes(filePath);
+
+            String decryptedData = EncryptionUtil.decrypt(new String(encryptedData));
+
+            System.out.println("File decrypted successfully: " + fileName);
+
+            return decryptedData.getBytes();
+        } catch (Exception e) {
+            throw new IOException("Error decrypting or retrieving file", e);
+        }
     }
 
     public void deleteFile(String fileName) throws IOException {
