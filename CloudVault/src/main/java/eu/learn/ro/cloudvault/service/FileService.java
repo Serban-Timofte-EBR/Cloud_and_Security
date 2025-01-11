@@ -5,6 +5,8 @@ import eu.learn.ro.cloudvault.dto.FileMetadataResponseDTO;
 import eu.learn.ro.cloudvault.model.FileMetadata;
 import eu.learn.ro.cloudvault.repository.FileMetadataRepository;
 import eu.learn.ro.cloudvault.security.EncryptionUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -22,6 +24,8 @@ import java.security.NoSuchAlgorithmException;
 
 @Service
 public class FileService {
+
+    private static final Logger logger = LoggerFactory.getLogger(FileService.class);
 
     @Autowired
     private FileMetadataRepository fileMetadataRepository;
@@ -52,15 +56,16 @@ public class FileService {
             Path storageDir = Paths.get(storageDirectory);
             if (!Files.exists(storageDir)) {
                 Files.createDirectories(storageDir);
+                logger.info("Storage directory created: {}", storageDir.toAbsolutePath());
             }
 
             Path filePath = storageDir.resolve(metadata.getFileName());
             Files.write(filePath, encryptedData.getBytes());
-
-            System.out.println("File encrypted and saved at: " + filePath.toAbsolutePath());
+            logger.info("File encrypted and saved at: {}", filePath.toAbsolutePath());
 
             return fileMetadataRepository.save(metadata);
         } catch (Exception e) {
+            logger.error("Error saving file: {}", metadata.getFileName(), e);
             throw new RuntimeException("Error encrypting and saving file", e);
         }
     }
@@ -70,6 +75,7 @@ public class FileService {
             Path filePath = Paths.get(storageDirectory, fileName);
 
             if (!Files.exists(filePath)) {
+                logger.warn("File not found: {}", fileName);
                 throw new IOException("File not found: " + fileName);
             }
 
@@ -77,7 +83,7 @@ public class FileService {
 
             String decryptedData = EncryptionUtil.decrypt(new String(encryptedData));
 
-            System.out.println("File decrypted successfully: " + fileName);
+            logger.info("File retrieved and decrypted successfully: {}", fileName);
 
             return decryptedData.getBytes();
         } catch (Exception e) {
@@ -90,14 +96,13 @@ public class FileService {
         Path filePath = storageDir.resolve(fileName);
 
         if (!Files.exists(filePath)) {
-            System.err.println("File not found: " + fileName);
+            logger.warn("File not found for deletion: {}", fileName);
             throw new IOException("File not found: " + fileName);
         }
 
         Files.delete(filePath);
-        System.out.println("File deleted successfully from disk: " + fileName);
 
         fileMetadataRepository.deleteByFileName(fileName);
-        System.out.println("File metadata deleted successfully from database: " + fileName);
+        logger.info("File and metadata deleted successfully: {}", fileName);
     }
 }
