@@ -4,6 +4,7 @@ import eu.learn.ro.cloudvault.model.FileMetadata;
 import eu.learn.ro.cloudvault.service.FileService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.annotation.Secured;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -17,6 +18,7 @@ public class FileController {
     private FileService fileService;
 
     @PostMapping("/upload")
+    @Secured({"ROLE_USER", "ROLE_ADMIN"})
     public ResponseEntity<FileMetadata> uploadFile(
             @RequestParam("file") MultipartFile file,
             @RequestParam("fileType") String fileType
@@ -41,6 +43,7 @@ public class FileController {
     }
 
     @GetMapping("/download/{fileName}")
+    @Secured({"ROLE_USER", "ROLE_ADMIN"})
     public ResponseEntity<byte[]> downloadFile(@PathVariable String fileName) {
         try {
             System.out.println("Request received to download file: " + fileName);
@@ -62,6 +65,21 @@ public class FileController {
             System.err.println("Unexpected error during file download: " + fileName);
             e.printStackTrace();
             return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @DeleteMapping("/delete/{fileName}")
+    @Secured("ROLE_ADMIN")
+    public ResponseEntity<String> deleteFile(@PathVariable String fileName) {
+        System.out.println("\"Admin attempting to delete file: {}\" + fileName");
+
+        try {
+            fileService.deleteFile(fileName);
+            return ResponseEntity.ok("File deleted successfully.");
+        } catch (IOException e) {
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Error deleting file.");
         }
     }
 }

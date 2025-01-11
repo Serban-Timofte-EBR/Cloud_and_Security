@@ -46,6 +46,7 @@ public class AuthController {
         User user = new User();
         user.setUsername(registerRequest.getUsername());
         user.setPassword(registerRequest.getPassword()); // TODO: Hash password
+        user.setRole(registerRequest.getRole());
         userRepository.save(user);
 
         System.out.println("User registered successfully: " + user.getUsername());

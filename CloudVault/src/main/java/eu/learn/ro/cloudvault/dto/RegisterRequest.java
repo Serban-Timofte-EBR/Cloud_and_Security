@@ -1,8 +1,11 @@
 package eu.learn.ro.cloudvault.dto;
 
+import eu.learn.ro.cloudvault.model.Role;
+
 public class RegisterRequest {
     private String username;
     private String password;
+    private Role role;
 
     public String getUsername() {
         return username;
@@ -18,5 +21,13 @@ public class RegisterRequest {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public Role getRole() {
+        return role;
+    }
+
+    public void setRole(Role role) {
+        this.role = role;
     }
 }

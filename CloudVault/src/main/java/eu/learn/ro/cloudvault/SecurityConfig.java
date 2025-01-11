@@ -26,7 +26,13 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/**").permitAll() // Allow all access to /api/files temporarily
+                        .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers("/api/admin/**").hasAuthority("ADMIN") // Only admins can access
+                        .requestMatchers("/api/user/**").hasAnyAuthority("ADMIN", "USER") // Admins and users
+                        .requestMatchers("/api/public/**").permitAll() // Public access
+                        .requestMatchers("/api/files/upload").hasAnyAuthority("ROLE_USER", "ROLE_ADMIN") // Upload: USER and ADMIN
+                        .requestMatchers("/api/files/download/**").hasAnyAuthority("ROLE_USER", "ROLE_ADMIN") // Download: USER and ADMIN
+                        .requestMatchers("/api/files/delete/**").hasAuthority("ROLE_ADMIN") // Delete: ADMIN only
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2

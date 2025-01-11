@@ -58,4 +58,20 @@ public class FileService {
 
         return java.nio.file.Files.readAllBytes(file.toPath());
     }
+
+    public void deleteFile(String fileName) throws IOException {
+        Path storageDir = Paths.get("storage");
+        Path filePath = storageDir.resolve(fileName);
+
+        if (!Files.exists(filePath)) {
+            System.err.println("File not found: " + fileName);
+            throw new IOException("File not found: " + fileName);
+        }
+
+        Files.delete(filePath);
+        System.out.println("File deleted successfully from disk: " + fileName);
+
+        fileMetadataRepository.deleteByFileName(fileName);
+        System.out.println("File metadata deleted successfully from database: " + fileName);
+    }
 }
