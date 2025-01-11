@@ -19,35 +19,21 @@ import java.nio.charset.StandardCharsets;
 @Configuration
 public class SecurityConfig {
 
-    private final String secretKey = "MI]Qf!om{3nZ-1!)R[rwc4zse0%MX`wz";
-
-//    @Bean
-//    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-//        http
-//                .csrf(csrf -> csrf.disable())
-//                .authorizeHttpRequests(auth -> auth
-//                        .requestMatchers("/auth/**").permitAll()
-//                        .requestMatchers("/api/files/**").permitAll() // Allow public access to /api/files
-//                        .anyRequest().authenticated()
-//                )
-//                .oauth2ResourceServer(oauth2 -> oauth2
-//                        .authenticationManagerResolver(authenticationManagerResolver()));
-//
-//        return http.build();
-//    }
+    private static final String secretKey = "MI]Qf!om{3nZ-1!)R[rwc4zse0%MX`wz";
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/**").permitAll()
-                        .requestMatchers("/api/files/**").authenticated() // Require authentication for /api/files
+                        .requestMatchers("/auth/**").permitAll() // Allow all access to /api/files temporarily
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .authenticationManagerResolver(authenticationManagerResolver()));
 
+        // Debugging for security rules
+        System.out.println("Security filter chain configured.");
         return http.build();
     }
 
@@ -61,10 +47,14 @@ public class SecurityConfig {
     @Bean
     public AuthenticationManagerResolver<HttpServletRequest> authenticationManagerResolver() {
         return request -> {
+            String authHeader = request.getHeader("Authorization");
+            System.out.println("Authorization header: " + authHeader);
+
             JwtAuthenticationProvider provider = new JwtAuthenticationProvider(jwtDecoder());
             return new AuthenticationManager() {
                 @Override
                 public Authentication authenticate(Authentication authentication) throws AuthenticationException {
+                    System.out.println("Authenticating token...");
                     return provider.authenticate(authentication);
                 }
             };

@@ -10,6 +10,9 @@ import org.springframework.stereotype.Service;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 @Service
 public class FileService {
@@ -36,20 +39,15 @@ public class FileService {
         return responseDTO;
     }
 
-    public FileMetadata saveFile(FileMetadata metadata, byte[] fileData) throws Exception {
-        // Save file to disk
-        File dir = new File(storageDirectory);
-        if (!dir.exists()) {
-            dir.mkdirs();
-        }
+    public FileMetadata saveFile(FileMetadata metadata, byte[] fileData) throws IOException {
+        Path storageDir = Paths.get("storage");
+        Files.createDirectories(storageDir);
 
-        File file = new File(storageDirectory + File.separator + metadata.getFileName());
-        try (FileOutputStream fos = new FileOutputStream(file)) {
-            fos.write(fileData);
-        }
+        Path filePath = storageDir.resolve(metadata.getFileName());
+        Files.write(filePath, fileData);
 
-        // Save metadata to the database
-        return fileMetadataRepository.save(metadata);
+        System.out.println("File saved at: " + filePath.toAbsolutePath());
+        return metadata;
     }
 
     public byte[] getFile(String fileName) throws IOException {

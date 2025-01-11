@@ -21,19 +21,23 @@ public class FileController {
             @RequestParam("file") MultipartFile file,
             @RequestParam("fileType") String fileType
     ) throws IOException {
-        System.out.println("Uploading file: " + file.getOriginalFilename());
+        System.out.println("Request received for uploading a file");
+        System.out.println("File parameter: " + (file == null ? "null" : file.getOriginalFilename()));
+        System.out.println("File type parameter: " + fileType);
+        System.out.println("File size: " + file.getSize() + " bytes");
+
+        if (file == null || file.isEmpty() || fileType.isBlank()) {
+            System.err.println("Invalid input: File or fileType is missing.");
+            return ResponseEntity.badRequest().body(null);
+        }
+
         FileMetadata metadata = new FileMetadata();
         metadata.setFileName(file.getOriginalFilename());
         metadata.setFileType(fileType);
         metadata.setFileSize(file.getSize());
 
-        try {
-            FileMetadata savedMetadata = fileService.saveFile(metadata, file.getBytes());
-            return ResponseEntity.ok(savedMetadata);
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException("Error uploading file", e);
-        }
+        FileMetadata savedMetadata = fileService.saveFile(metadata, file.getBytes());
+        return ResponseEntity.ok(savedMetadata);
     }
 
     @GetMapping("/download/{fileName}")

@@ -4,15 +4,20 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 
+import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Date;
 
 import org.springframework.stereotype.Component;
 
+import javax.crypto.spec.SecretKeySpec;
+
 @Component
 public class JwtUtil {
 
-    private final Key key = Keys.secretKeyFor(SignatureAlgorithm.HS256);
+    private final String secretKey = "MI]Qf!om{3nZ-1!)R[rwc4zse0%MX`wz";
+    private final Key key = new SecretKeySpec(secretKey.getBytes(StandardCharsets.UTF_8), SignatureAlgorithm.HS256.getJcaName());
+
 
     public String generateToken(String username) {
         return Jwts.builder()
