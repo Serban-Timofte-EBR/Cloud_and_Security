@@ -6,10 +6,12 @@ import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 
 import java.nio.charset.StandardCharsets;
+import eu.learn.ro.cloudvault.security.KayVaultUtil;
 import java.security.Key;
 import java.util.Date;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.spec.SecretKeySpec;
@@ -17,9 +19,13 @@ import javax.crypto.spec.SecretKeySpec;
 @Component
 public class JwtUtil {
 
-    private final String secretKey = "MI]Qf!om{3nZ-1!)R[rwc4zse0%MX`wz";
-    private final Key key = new SecretKeySpec(secretKey.getBytes(StandardCharsets.UTF_8), SignatureAlgorithm.HS256.getJcaName());
+    @Autowired
+    private KayVaultUtil keyVaultUtil;
 
+    private Key getJwtKey() {
+        String secretKey = keyVaultUtil.getSecret("jwt-secret");
+        return new SecretKeySpec(secretKey.getBytes(StandardCharsets.UTF_8), SignatureAlgorithm.HS256.getJcaName());
+    }
 
     public String generateToken(String username, List<Role> roles) {
         return Jwts.builder()
@@ -27,13 +33,13 @@ public class JwtUtil {
                 .claim("roles", roles.stream().map(role -> "ROLE_" + role.name()).toList()) // Prefix roles
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10)) // 10 hours
-                .signWith(key)
+                .signWith(getJwtKey())
                 .compact();
     }
 
     public String validateToken(String token) {
         return Jwts.parserBuilder()
-                .setSigningKey(key)
+                .setSigningKey(getJwtKey())
                 .build()
                 .parseClaimsJws(token)
                 .getBody()
